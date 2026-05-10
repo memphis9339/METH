@@ -10,20 +10,19 @@
 
 static unsigned char* meth_align_plaintext(const unsigned char* text, size_t text_len, size_t* out_len)
 {
-    *out_len = text_len + 32;
+    *out_len = text_len + crypto_box_ZEROBYTES;
     unsigned char* padded = (unsigned char*)malloc(*out_len);
     if (!padded) return NULL;
 
-    memset(padded, 0, 32);
-    memcpy(padded + 32, text, text_len);
+    memset(padded, 0, crypto_box_ZEROBYTES);
+    memcpy(padded + crypto_box_ZEROBYTES, text, text_len);
 
     return padded;
 }
 
 int meth_crypto_genkeys(meth_keypair* kp)
 {
-    if (!kp)
-        return -1;
+    if (!kp) return -1;
 
     crypto_box_keypair(kp->pk, kp->sk);
     return 0;
@@ -38,7 +37,7 @@ int meth_crypto_keyexchange(int fd, unsigned char* out)
     if (meth_send(fd, kp.pk, sizeof(kp.pk)) == -1)
         return -1;
 
-    unsigned char peer_pk[32];
+    unsigned char peer_pk[crypto_box_PUBLICKEYBYTES];
     int r = meth_recv(fd, peer_pk, sizeof(peer_pk));
 
     if (r == -1)
@@ -65,7 +64,7 @@ int meth_crypto_encrypt(
     if (!in || !out || !key)
         return -1;
 
-    size_t need = 24 + in_len + 16;
+    size_t need = crypto_box_NONCEBYTES + in_len + crypto_box_MACBYTES;
     if (out_cap < need)
         return -1;
 
@@ -81,8 +80,8 @@ int meth_crypto_encrypt(
     }
     memset(enc, 0, buf_len);
 
-    unsigned char nonce[24];
-    randombytes(nonce, 24);
+    unsigned char nonce[crypto_box_NONCEBYTES];
+    randombytes(nonce, crypto_box_NONCEBYTES);
 
     if (crypto_box_afternm(enc, buf, buf_len, nonce, key) != 0) {
         free(buf);
@@ -90,8 +89,8 @@ int meth_crypto_encrypt(
         return -1;
     }
 
-    memcpy(out, nonce, 24);
-    memcpy(out + 24, enc + 16, in_len + 16);
+    memcpy(out, nonce, crypto_box_NONCEBYTES);
+    memcpy(out + crypto_box_NONCEBYTES, enc + crypto_box_MACBYTES, in_len + crypto_box_MACBYTES);
 
     free(buf);
     free(enc);
@@ -108,29 +107,29 @@ int meth_crypto_decrypt(
     if (!out || !in || !key)
         return -1;
     
-    if (in_len < 24 + 16)
+    if (in_len < crypto_box_NONCEBYTES + crypto_box_MACBYTES)
         return -1;
 
     const unsigned char* nonce = in;
-    const unsigned char* body = in + 24;
-    unsigned long long body_len = in_len - 24;
+    const unsigned char* body = in + crypto_box_NONCEBYTES;
+    unsigned long long body_len = in_len - crypto_box_NONCEBYTES;
 
-    size_t buf_len = body_len + 16;
+    size_t buf_len = body_len + crypto_box_MACBYTES;
     unsigned char* buf = (unsigned char*)malloc(buf_len);
     if (!buf)
         return -1;
 
-    memset(buf, 0, 16);
-    memcpy(buf + 16, body, body_len);
+    memset(buf, 0, crypto_box_MACBYTES);
+    memcpy(buf + crypto_box_MACBYTES, body, body_len);
 
-    size_t plain_len = body_len - 16;
+    size_t plain_len = body_len - crypto_box_MACBYTES;
     if (out_cap < buf_len) {
         free(buf);
         return -1;
     }
 
     if (crypto_box_open_afternm(out, buf, buf_len, nonce, key) != 0) {
-        memset(out, 0, plain_len + 32);
+        memset(out, 0, plain_len + crypto_box_ZEROBYTES);
         free(buf);
         return -1;
     }

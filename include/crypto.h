@@ -3,15 +3,11 @@
 
 #include <stddef.h>
 
-#define crypto_box_BEFORENMBYTES 32
-#define crypto_box_NONCEBYTES 24
 #define crypto_box_MACBYTES 16
-#define crypto_box_ZEROBYTES 32
-#define crypto_box_PUBLICKEYBYTES 32
 
 typedef struct {
-    unsigned char pk[crypto_box_BEFORENMBYTES];
-    unsigned char sk[crypto_box_BEFORENMBYTES];
+    unsigned char pk[32];
+    unsigned char sk[32];
 } meth_keypair;
 
 int meth_crypto_genkeys(meth_keypair* kp);

@@ -8,10 +8,10 @@
 #include <internal/meth_internal.h>
 #include <tweetnacl.h>
 
-static unsigned char* meth_align_plaintext(const unsigned char* text, size_t text_len, size_t* out_len)
+static u8* meth_align_plaintext(const u8* text, size_t text_len, size_t* out_len)
 {
     *out_len = text_len + crypto_box_ZEROBYTES;
-    unsigned char* padded = (unsigned char*)malloc(*out_len);
+    u8* padded = (u8*)malloc(*out_len);
     if (!padded) return NULL;
 
     memset(padded, 0, crypto_box_ZEROBYTES);
@@ -28,7 +28,7 @@ int meth_crypto_genkeys(meth_keypair* kp)
     return 0;
 }
 
-int meth_crypto_keyexchange(int fd, unsigned char* out)
+int meth_crypto_keyexchange(int fd, u8* out)
 {
     meth_keypair kp = {0};
     if (meth_crypto_genkeys(&kp) == -1)
@@ -37,7 +37,7 @@ int meth_crypto_keyexchange(int fd, unsigned char* out)
     if (meth_send(fd, kp.pk, sizeof(kp.pk)) == -1)
         return -1;
 
-    unsigned char peer_pk[crypto_box_PUBLICKEYBYTES];
+    u8 peer_pk[crypto_box_PUBLICKEYBYTES];
     int r = meth_recv(fd, peer_pk, sizeof(peer_pk));
 
     if (r == -1)
@@ -55,11 +55,11 @@ int meth_crypto_keyexchange(int fd, unsigned char* out)
 }
 
 int meth_crypto_encrypt(
-    const unsigned char* in,
-    unsigned char* out,
+    const u8* in,
+    u8* out,
     size_t in_len,
     size_t out_cap,
-    const unsigned char* key)
+    const u8* key)
 {
     if (!in || !out || !key)
         return -1;
@@ -69,18 +69,18 @@ int meth_crypto_encrypt(
         return -1;
 
     size_t buf_len;
-    unsigned char* buf = meth_align_plaintext(in, in_len, &buf_len);
+    u8* buf = meth_align_plaintext(in, in_len, &buf_len);
     if (!buf)
         return -1;
 
-    unsigned char* enc = (unsigned char*)malloc(buf_len);
+    u8* enc = (u8*)malloc(buf_len);
     if (!enc) {
         free(buf);
         return -1;
     }
     memset(enc, 0, buf_len);
 
-    unsigned char nonce[crypto_box_NONCEBYTES];
+    u8 nonce[crypto_box_NONCEBYTES];
     randombytes(nonce, crypto_box_NONCEBYTES);
 
     if (crypto_box_afternm(enc, buf, buf_len, nonce, key) != 0) {
@@ -98,11 +98,11 @@ int meth_crypto_encrypt(
 }
 
 int meth_crypto_decrypt(
-    unsigned char* out,
+    u8* out,
     size_t out_cap,
-    const unsigned char* in,
-    unsigned long long in_len,
-    const unsigned char* key)
+    const u8* in,
+    u64 in_len,
+    const u8* key)
 {
     if (!out || !in || !key)
         return -1;
@@ -110,12 +110,12 @@ int meth_crypto_decrypt(
     if (in_len < crypto_box_NONCEBYTES + crypto_box_MACBYTES)
         return -1;
 
-    const unsigned char* nonce = in;
-    const unsigned char* body = in + crypto_box_NONCEBYTES;
-    unsigned long long body_len = in_len - crypto_box_NONCEBYTES;
+    const u8* nonce = in;
+    const u8* body = in + crypto_box_NONCEBYTES;
+    u64 body_len = in_len - crypto_box_NONCEBYTES;
 
     size_t buf_len = body_len + crypto_box_MACBYTES;
-    unsigned char* buf = (unsigned char*)malloc(buf_len);
+    u8* buf = (u8*)malloc(buf_len);
     if (!buf)
         return -1;
 

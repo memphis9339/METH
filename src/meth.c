@@ -13,7 +13,7 @@
 
 struct meth_connection {
     int fd;
-    unsigned char shared_key[32];
+    u8 shared_key[32];
 };
 
 struct meth_server {
@@ -21,7 +21,7 @@ struct meth_server {
 };
 
 struct meth_buffer {
-    unsigned char* data;
+    u8* data;
     size_t len;
 };
 
@@ -151,7 +151,7 @@ meth_connection* meth_secure_connect(const char* host, uint16_t port)
         return NULL;
     }
 
-    unsigned char shared_key[32];
+    u8 shared_key[32];
     if (meth_crypto_keyexchange(fd, shared_key) != 0) {
         close(fd);
         free(conn);
@@ -177,7 +177,7 @@ meth_connection* meth_accept(meth_server* server)
         return NULL;
     }
 
-    unsigned char shared_key[32];
+    u8 shared_key[32];
     if (meth_crypto_keyexchange(socket, shared_key) != 0) {
         close(socket);
         free(conn);
@@ -195,10 +195,10 @@ ssize_t meth_secure_send(meth_connection* conn, const void* buffer, size_t size)
     if (!conn || !buffer || conn->fd == -1)
         return -1;
 
-    const unsigned char* data = buffer;
+    const u8* data = buffer;
     size_t max_cipher = size + 16 + 24;
 
-    unsigned char* tmp = malloc(max_cipher + 4);
+    u8* tmp = malloc(max_cipher + 4);
     if (!tmp) return -1;
 
     int res = meth_crypto_encrypt(
@@ -226,7 +226,7 @@ meth_buffer* meth_secure_recv(meth_connection* conn)
     if (!conn || conn->fd == -1)
         return NULL;
 
-    unsigned char header[4];
+    u8 header[4];
     if (meth_recv(conn->fd, header, 4) != 0)
         return NULL;
 
@@ -234,7 +234,7 @@ meth_buffer* meth_secure_recv(meth_connection* conn)
     if (length < 24 + 16 || length > METH_MAX_PACKET)
         return NULL;
 
-    unsigned char* payload = (unsigned char*)malloc(length);
+    u8* payload = (u8*)malloc(length);
     if (!payload)
         return NULL;
 
@@ -244,7 +244,7 @@ meth_buffer* meth_secure_recv(meth_connection* conn)
     }
 
     size_t plain_buf_len = length;
-    unsigned char* plaintext_buf = (unsigned char*)malloc(plain_buf_len);
+    u8* plaintext_buf = (u8*)malloc(plain_buf_len);
     if (!plaintext_buf) {
         free(payload);
         return NULL;
@@ -273,7 +273,7 @@ meth_buffer* meth_secure_recv(meth_connection* conn)
         return NULL; 
     }
 
-    unsigned char* out = malloc(plain_len);
+    u8* out = malloc(plain_len);
     if (!out) {
         free(payload);
         free(plaintext_buf); 

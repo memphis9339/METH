@@ -8,26 +8,26 @@ typedef unsigned char u8;
 typedef unsigned long long u64;
 
 typedef struct {
-    unsigned char pk[32];
-    unsigned char sk[32];
+    u8 pk[32];
+    u8 sk[32];
 } meth_keypair;
 
 int meth_crypto_genkeys(meth_keypair* kp);
-int meth_crypto_keyexchange(int fd, unsigned char* out);
+int meth_crypto_keyexchange(int fd, u8* out);
 
 int meth_crypto_encrypt(
-    const unsigned char* plain,
-    unsigned char* cipher,
+    const u8* plain,
+    u8* cipher,
     size_t plain_len,
     size_t cipher_c,
-    const unsigned char* key
+    const u8* key
 );
 int meth_crypto_decrypt(
-    unsigned char* plaintext_out,
+    u8* plaintext_out,
     size_t plaintext_out_len,
-    const unsigned char* ciphertext,
+    const u8* ciphertext,
     unsigned long long cipher_len,
-    const unsigned char* key);
+    const u8* key);
 
 
 #endif

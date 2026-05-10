@@ -226,8 +226,8 @@ meth_buffer* meth_secure_recv(meth_connection* conn)
     if (!conn || conn->fd == -1)
         return NULL;
 
-    u8 header[4];
-    if (meth_recv(conn->fd, header, 4) != 0)
+    u8 header[METH_HEADER_SIZE];
+    if (meth_recv(conn->fd, header, METH_HEADER_SIZE) != 0)
         return NULL;
 
     uint32_t length = read_u32_be(header);

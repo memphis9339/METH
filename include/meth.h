@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 
 #define METH_MAX_PACKET 65536
+#define METH_HEADER_SIZE 4
 
 typedef struct meth_connection meth_connection;
 typedef struct meth_buffer meth_buffer;
